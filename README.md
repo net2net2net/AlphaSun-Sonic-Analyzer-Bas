@@ -9,12 +9,19 @@
 
 ## 〇、下载与仓库
 
-**当前版本：v1.1.0（versionCode 16）**
+**当前版本：v1.2.0（versionCode 17 / CFBundleVersion 17）**
 
 | 平台 | 产物 | 说明 |
 |---|---|---|
-| Android | `AlphaSun-Sonic-Analyzer-1.1.0-mobile.apk` | 免安装直装，armeabi-v7a/arm64-v8a |
-| iOS | `AlphaSun-Sonic-Analyzer-1.1.0-ios-unsigned.ipa` | iPhone/iPad 通用，**未签名**，需重签后安装 |
+| Android | `AlphaSun-Sonic-Analyzer-1.2.0-mobile.apk` | 已签名直装，armeabi-v7a/arm64-v8a |
+| iOS | `AlphaSun-Sonic-Analyzer-1.2.0-ios-unsigned.ipa` | iPhone/iPad 通用，**未签名**，需重签后安装 |
+
+**发布页（含全部历史版本附件）**
+
+| 平台 | Release |
+|---|---|
+| GitHub | https://github.com/net2net2net/AlphaSun-Sonic-Analyzer-Bas/releases/tag/v1.2.0-sonic |
+| Gitee | https://gitee.com/net2net2net/alpha-sun-sonic-analyzer-bas/releases/v1.2.0-sonic |
 
 **源码仓库（双平台同步，内容一致）**
 
@@ -40,7 +47,7 @@
 |---|---|---|
 | 包名 | `com.alphasun.audiolab` | **`com.alphasun.sonicanalyzer`** |
 | 应用名 | AlphaSun 声波分析仪 | **AlphaSun Sonic Analyzer** |
-| 版本 | v2.24.1 | **v1.1.0**（versionCode 16） |
+| 版本 | v2.24.1 | **v1.2.0**（versionCode 17） |
 | 二级分析台 | 有 | **已下线** |
 | 音频工具集 | 有（转写/环境采集/值守） | **已下线**，仅保留**警戒值守**（改名，提到主操作条） |
 | CPU / 内存 展示 | 有 | **已移除**（移动端无系统级权限，原本恒为 —） |
