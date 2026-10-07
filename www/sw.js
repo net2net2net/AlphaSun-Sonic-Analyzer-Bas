@@ -1,5 +1,5 @@
 // AlphaSun 声波分析仪 · 离线缓存（PWA）
-const CACHE='alphasun-audio-v1.1.0';
+const CACHE='alphasun-audio-v1.2.0';
 // v0.03：视觉字体改为本地内嵌（Orbitron 英文 + HarmonyDisplay 中文子集），
 // 必须一并进 SW 预缓存 —— 否则离线时 CSS 的 url() 请求失败会被 fetch 兜底返回 index.html，
 // 字体解码失败后静默回退系统字体，"科技艺术字"在离线场景直接失效。
