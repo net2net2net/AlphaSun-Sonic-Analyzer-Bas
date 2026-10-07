@@ -1,0 +1,123 @@
+name: iOS Build (Ad-Hoc 签名 · 可安装 IPA)
+
+# 仅手动触发（workflow_dispatch），避免在未配置 Apple 签名 secrets 时自动失败。
+# 产出：可在已登记 UDID 的设备上安装的 Ad-Hoc IPA（Actions → Artifacts 下载）。
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Marketing 版本号 (如 2.24.1)'
+        required: false
+        default: '2.24.1'
+      build_number:
+        description: 'Build 号 (如 2241，可任意正整数，用于设备升级区分)'
+        required: false
+        default: '2241'
+      export_method:
+        description: '导出方式'
+        required: false
+        default: 'ad-hoc'
+        type: choice
+        options:
+          - ad-hoc
+          - app-store
+          - development
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: npm ci
+        run: npm ci
+
+      - name: 重新生成 web 资产 (www)
+        run: node sync-www.js
+
+      - name: Capacitor 同步 iOS 原生工程
+        run: npx cap sync ios
+
+      - name: 确保 iOS 隐私用途描述（缺失则注入）
+        run: |
+          PLIST=ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :NSMicrophoneUsageDescription" "$PLIST" >/dev/null 2>&1 || \
+            /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string '用于实时声波采集、频谱分析与声波警戒值守'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$PLIST" >/dev/null 2>&1 || \
+            /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string '用于声波警戒触发时前后摄像头自动抓拍留证'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryAddUsageDescription" "$PLIST" >/dev/null 2>&1 || \
+            /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string '用于将抓拍与录像保存到相册留证'" "$PLIST"
+          # v1.1.0：GPS 位移触发需要定位用途描述，缺失时 iOS 直接 denied（不弹框，静默失效）
+          /usr/libexec/PlistBuddy -c "Print :NSLocationWhenInUseUsageDescription" "$PLIST" >/dev/null 2>&1 || \
+            /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string '用于声波警戒值守时检测设备位置是否发生移动（GPS 位移触发留证）'" "$PLIST"
+
+      - name: 导入 Apple 签名（证书 + Ad-Hoc 描述文件）
+        env:
+          IOS_CERT_P12_BASE64: ${{ secrets.IOS_CERT_P12_BASE64 }}
+          IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+          IOS_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
+        run: bash tools/ios-sign.sh
+
+      - name: pod install
+        run: cd ios/App && pod install
+
+      - name: xcodebuild archive（手动签名）
+        env:
+          TEAM: ${{ secrets.IOS_TEAM_ID }}
+          PROFILE: ${{ secrets.IOS_PROFILE_NAME }}
+          METHOD: ${{ github.event.inputs.export_method }}
+        run: |
+          # Ad-Hoc / App-Store → 付费账号用 iPhone Distribution；development → 免费 Personal Team 用 iPhone Developer
+          IDENTITY="iPhone Distribution"
+          if [ "$METHOD" = "development" ]; then IDENTITY="iPhone Developer"; fi
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+            -archivePath ios/build/AlphaSun.xcarchive \
+            -allowProvisioningUpdates \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM" \
+            CODE_SIGN_IDENTITY="$IDENTITY" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROFILE" \
+            MARKETING_VERSION="${{ github.event.inputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ github.event.inputs.build_number }}" \
+            clean archive
+
+      - name: 导出 IPA
+        env:
+          TEAM: ${{ secrets.IOS_TEAM_ID }}
+        run: |
+          mkdir -p ios/build
+          cat > ios/build/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>${{ github.event.inputs.export_method }}</string>
+            <key>teamID</key><string>$TEAM</string>
+            <key>uploadBitcode</key><false/>
+            <key>uploadSymbols</key><true/>
+            <key>stripSwiftSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive -archivePath ios/build/AlphaSun.xcarchive \
+            -exportOptionsPlist ios/build/ExportOptions.plist \
+            -exportPath ios/build/ipa
+
+      - name: 重命名并上传构件
+        run: |
+          IPA=$(ls -1 ios/build/ipa/*.ipa | head -1)
+          mv "$IPA" "AlphaSun-Sonic-Analyzer-${{ github.event.inputs.version }}-ios.ipa"
+          echo "产物: AlphaSun-Sonic-Analyzer-${{ github.event.inputs.version }}-ios.ipa"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlphaSun-iOS-IPA
+          path: AlphaSun-Sonic-Analyzer-${{ github.event.inputs.version }}-ios.ipa

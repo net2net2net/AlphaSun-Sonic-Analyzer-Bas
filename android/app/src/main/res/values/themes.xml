@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- v0.4.0 全原生：Compose 自绘背景，主题只负责状态栏/启动屏 -->
+    <style name="Theme.AlphaSun" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#070C18</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.AlphaSun.Main</item>
+    </style>
+    <style name="Theme.AlphaSun.Main" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">#070C18</item>
+        <item name="android:navigationBarColor">#070C18</item>
+        <item name="android:windowBackground">#070C18</item>
+    </style>
+
+    <!-- v0.3.0 web 框架线复原：Capacitor 的 BridgeActivity 继承 AppCompatActivity，
+         **必须**使用 AppCompat 派生主题，否则运行即崩：
+         "You need to use a Theme.AppCompat theme (or a descendant theme) with this activity."
+         上面两个原生主题都是 android:Theme.* 系，不满足该约束，故单列一个。 -->
+    <style name="Theme.AlphaSun.Capacitor" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:statusBarColor">#070C18</item>
+        <item name="android:navigationBarColor">#070C18</item>
+        <item name="android:windowBackground">#070C18</item>
+    </style>
+</resources>

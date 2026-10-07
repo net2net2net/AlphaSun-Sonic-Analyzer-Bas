@@ -1,0 +1,19 @@
+{
+  "name": "AlphaSun Sonic Analyzer 声波分析仪",
+  "short_name": "Sonic Analyzer",
+  "description": "移动端声波频谱分析与警戒值守（Android / iOS）",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#04060d",
+  "theme_color": "#05070f",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

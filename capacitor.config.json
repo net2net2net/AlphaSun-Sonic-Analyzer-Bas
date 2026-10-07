@@ -1,0 +1,26 @@
+{
+  "appId": "com.alphasun.sonicanalyzer",
+  "appName": "AlphaSun Sonic Analyzer",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "capacitor"
+  },
+  "android": {
+    "webContentsDebuggingEnabled": false,
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webViewSecure": true
+  },
+  "ios": {
+    "contentInset": "always",
+    "limitsNavigationsToAppBoundDomains": true,
+    "scrollEnabled": true,
+    "useLegacyBridge": false
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": false
+    }
+  }
+}

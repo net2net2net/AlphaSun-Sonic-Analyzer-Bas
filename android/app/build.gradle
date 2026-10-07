@@ -1,0 +1,92 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+/* 注：Kotlin 1.9.x 不存在 org.jetbrains.kotlin.plugin.compose（那是 2.0+ 的插件）。
+   1.9 走 buildFeatures.compose + composeOptions 指定编译器扩展版本。
+   误加该插件会让 KGP 的 BuildFlowService 配置失败，报
+   "compileSdkVersion is not specified" —— 与 compileSdk 本身无关。*/
+
+android {
+    namespace "com.alphasun.sonicanalyzer"
+    compileSdk rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.alphasun.sonicanalyzer"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // v0.3.0 web 框架线：以 dist 参考 APK（dist/AlphaSun-Sonic-Analyzer-0.3.0.apk，
+        // 2026-10-04）为权威；web 线自 0.7.0 起跳过原生线占用的 0.4.0~0.6.4 号段。
+        // 原生重写线曾用 3，属另一条版本线，勿混。
+        // ⚠ 本行是唯一权威 versionCode；上方注释禁止出现 "versionCode <数字>" 字样
+        //   （2026-10-05 事故：bump 脚本"替换首个匹配"曾把注释改了、实际值漏改，
+        //    导致 APK versionCode 停在 7 而六点回读误报 9。脚本已改为整行锚定。）
+        versionCode 16
+        versionName "1.1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    /* 移动版 v0.01：发布签名。密钥库与口令只存在于本机（已加入 .gitignore，绝不入库）。
+       若本机没有 alphasun-release.jks，Release 构建会自动退化为未签名，Debug 不受影响。 */
+    signingConfigs {
+        release {
+            def ks = file('../alphasun-release.jks')
+            if (ks.exists()) {
+                storeFile ks
+                storePassword 'alphasun2026'
+                keyAlias 'alphasun'
+                keyPassword 'alphasun2026'
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (file('../alphasun-release.jks').exists()) { signingConfig signingConfigs.release }
+        }
+    }
+}
+
+/* Compose 保留：原生 Kotlin 线源码仍在库内，必须能编译。
+   启动入口已是 Capacitor 的 BridgeMainActivity，Compose 不会被加载。 */
+android {
+    buildFeatures { compose true }
+    composeOptions {
+        // 与 Kotlin 1.9.24 配套的 Compose 编译器扩展
+        kotlinCompilerExtensionVersion = '1.5.14'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+    packaging { resources { excludes += '/META-INF/{AL2.0,LGPL2.1}' } }
+}
+
+dependencies {
+    // —— Capacitor web 框架（v0.3.0 线复原）——
+    implementation project(':capacitor-android')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+
+    implementation "androidx.core:core-ktx:1.13.1"
+    implementation "androidx.activity:activity-compose:1.9.2"
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.6"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    // Compose（BOM 统一版本，避免逐个对齐）—— 原生线保留
+    implementation platform('androidx.compose:compose-bom:2024.09.03')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-graphics'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+    implementation 'androidx.compose.foundation:foundation'
+    implementation 'androidx.navigation:navigation-compose:2.8.3'
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+}

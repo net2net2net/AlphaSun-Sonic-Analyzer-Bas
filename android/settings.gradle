@@ -1,0 +1,8 @@
+// v0.3.0 web 框架线复原（2026-10-05）：
+// v0.4.0「全原生重写」曾移除 Capacitor / Cordova 插件模块，
+// 现按「以 web 框架为版本基线」的要求把 Capacitor 模块挂回。
+// 原生 Kotlin/Compose 源码保留在 app/src/main/java 下（不删除），
+// 但启动入口改为 BridgeMainActivity（Capacitor WebView 容器）。
+include ':app'
+include ':capacitor-android'
+project(':capacitor-android').projectDir = new File('../node_modules/@capacitor/android/capacitor')

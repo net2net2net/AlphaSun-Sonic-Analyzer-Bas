@@ -1,0 +1,37 @@
+node_modules/
+dist/
+.workbuddy/
+*.log
+
+# Android 构建产物
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+
+# 签名密钥绝不入库
+*.jks
+*.keystore
+
+# iOS
+ios/Pods/
+ios/App/Pods/
+ios/App/build/
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# 截图
+*.png
+!assets/icon.png
+__pycache__/
+
+# 一次性排查脚本（tools/.*.js / tools/_*.py）不入库
+tools/.*.js
+tools/_*.py
+# ⚠ 例外：v1.0.2 位移功能门禁必须入库。
+#    它抓出过 alMotCalm 的 const 重赋值（严格模式抛 TypeError → 静止基线永远建不起来
+#    → 位移检测 100% 失效）与基线自证漂移两个真 bug。丢掉它等于放弃回归保护。
+# _canvas_stub.js 是它的依赖（最小 canvas 2D context 桩），一并保留。
+!tools/_harness_motion.js
+!tools/_canvas_stub.js

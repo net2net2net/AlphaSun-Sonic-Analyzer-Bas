@@ -1,0 +1,84 @@
+name: iOS Build (无签名 IPA · 验证/自签用)
+
+# 手动触发（workflow_dispatch）。
+# 产出「未签名」IPA：在云端 Mac 完成构建，但不导入任何 Apple 证书/描述文件，
+# 也跳过 exportArchive。可直接验证构建是否通过，或下载后自行用 codesign + 描述文件重签。
+# 注意：未签名 IPA 不能直接装真机（iOS 会拒），必须重签后才能安装。
+# 本工作流不需要任何 Secrets，随时可跑。
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Marketing 版本号 (如 2.24.1)'
+        required: false
+        default: '2.24.1'
+      build_number:
+        description: 'Build 号 (如 2241)'
+        required: false
+        default: '2241'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: npm ci
+        run: npm ci
+
+      - name: 重新生成 web 资产 (www)
+        run: node sync-www.js
+
+      - name: Capacitor 同步 iOS 原生工程
+        run: npx cap sync ios
+
+      - name: 确保 iOS 隐私用途描述（缺失则注入）
+        run: |
+          PLIST=ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :NSMicrophoneUsageDescription" "$PLIST" >/dev/null 2>&1 || \
+            /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string '用于实时声波采集、频谱分析与声波警戒值守'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Print :NSCameraUsageDescription" "$PLIST" >/dev/null 2>&1 || \
+            /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string '用于声波警戒触发时前后摄像头自动抓拍留证'" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryAddUsageDescription" "$PLIST" >/dev/null 2>&1 || \
+            /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string '用于将抓拍与录像保存到相册留证'" "$PLIST"
+          # v1.1.0：GPS 位移触发需要定位用途描述，缺失时 iOS 直接 denied（不弹框，静默失效）
+          /usr/libexec/PlistBuddy -c "Print :NSLocationWhenInUseUsageDescription" "$PLIST" >/dev/null 2>&1 || \
+            /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string '用于声波警戒值守时检测设备位置是否发生移动（GPS 位移触发留证）'" "$PLIST"
+
+      - name: pod install
+        run: cd ios/App && pod install
+
+      - name: xcodebuild archive（关闭签名，产出未签名 .xcarchive）
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release \
+            -archivePath ios/build/AlphaSun.xcarchive \
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_STYLE=Manual \
+            MARKETING_VERSION="${{ github.event.inputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ github.event.inputs.build_number }}" \
+            clean archive
+
+      - name: 打包未签名 IPA（直接 zip .app，不跑 exportArchive）
+        run: |
+          APP=$(find ios/build/AlphaSun.xcarchive/Products/Applications -maxdepth 1 -name '*.app' -type d | head -1)
+          echo "App bundle: $APP"
+          if [ -z "$APP" ]; then echo "!! 未找到 .app，archive 可能失败"; exit 1; fi
+          rm -rf ios/build/ipa && mkdir -p ios/build/ipa/Payload
+          cp -R "$APP" ios/build/ipa/Payload/
+          cd ios/build/ipa
+          zip -r "AlphaSun-Sonic-Analyzer-${{ github.event.inputs.version }}-ios-unsigned.ipa" Payload
+          ls -la "AlphaSun-Sonic-Analyzer-${{ github.event.inputs.version }}-ios-unsigned.ipa"
+
+      - name: Upload 未签名 IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlphaSun-iOS-IPA-unsigned
+          path: ios/build/ipa/AlphaSun-Sonic-Analyzer-${{ github.event.inputs.version }}-ios-unsigned.ipa

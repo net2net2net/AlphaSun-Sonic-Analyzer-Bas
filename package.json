@@ -1,0 +1,34 @@
+{
+  "name": "alphasun-sonic-analyzer",
+  "version": "1.1.0",
+  "private": true,
+  "description": "AlphaSun Sonic Analyzer 声波分析仪 — 移动端（Android/iOS）实时声波频谱分析与警戒值守",
+  "author": "阳光 net2net2net (VX: net2net)",
+  "homepage": "https://alphasun.example.com",
+  "scripts": {
+    "sync": "node sync-www.js && node tools/cap-copy.js && node tools/check.js",
+    "check": "node tools/check.js",
+    "qa": "node tools/mobile-qa.js",
+    "audit": "node tools/mobile-audit.js",
+    "fontcheck": "node tools/fontcheck.js",
+    "micsmoke": "node tools/mic-smoke.js",
+    "guardsmoke": "node tools/guard-smoke.js",
+    "mobileshot": "node tools/mobile-shot.js",
+    "bump": "node tools/bump-version.js",
+    "build:android": "node sync-www.js && node tools/cap-copy.js && node tools/build-android.js assembleRelease",
+    "verify": "node tools/mobile-verify.js",
+    "touchcheck": "node tools/mobile-touch.js",
+    "fullcheck": "node tools/mobile-fullcheck.js",
+    "centercheck": "node tools/mobile-center.js",
+    "fullgate": "node tools/check.js && node tools/mobile-qa.js && node tools/mobile-audit.js && node tools/fontcheck.js && node tools/mic-smoke.js && node tools/guard-smoke.js"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.2.2"
+  },
+  "dependencies": {
+    "vosk-browser": "^0.0.8"
+  }
+}

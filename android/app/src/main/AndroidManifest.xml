@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AlphaSun">
+
+        <!-- v0.3.0 web 框架线启动入口：Capacitor WebView 容器。
+             主题必须 AppCompat 派生（Theme.AlphaSun.Capacitor），
+             BridgeActivity 继承 AppCompatActivity，用 android:Theme.* 会运行即崩。 -->
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|fontScale"
+            android:name=".BridgeMainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/Theme.AlphaSun.Capacitor"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- 原生 Kotlin/Compose 版入口（v0.4.0 全原生线）：源码与依赖**全部保留**，
+             仅不再作为启动页；需要复活原生版时把下面 android:name 换回启动页即可。 -->
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/Theme.AlphaSun"
+            android:exported="false" />
+
+        <!-- v0.6.0 新增：值守前台服务。
+             此前只声明了 FOREGROUND_SERVICE(_MICROPHONE/_CAMERA) 权限却没有 Service 类，
+             切后台/息屏后麦克风采集被系统限制，声波警戒值守实际不可用。
+             foregroundServiceType 在 API 29+ 用于声明用途，API 34 强制要求。 -->
+        <service
+            android:name=".GuardService"
+            android:exported="false"
+            android:foregroundServiceType="microphone|camera" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- v2.2.0 修复：Capacitor 原生 BridgeWebChromeClient 对 AUDIO_CAPTURE 要求同时具备
+         RECORD_AUDIO 与 MODIFY_AUDIO_SETTINGS 才会 grant，缺失此权限会导致 getUserMedia 始终失败 -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- 蓝牙耳机麦克风采集支持（可选，不影响主链路） -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <!-- v0.07：声波警戒在告警时调用**前/后摄像头**抓拍与录像，必须声明 CAMERA，
+         否则 Android 不会弹出相机权限框，getUserMedia({video:true}) 直接被拒。
+         Android 13+ 还需运行时申请，且录音与录像要写入应用私有目录之外的
+         可读位置时需 READ_MEDIA_* —— 本项目抓拍/录像先落应用私有缓存再由用户导出，
+         因此不额外申请存储权限。 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- v0.4.0 全原生：值守台需要前台服务，保证息屏/切后台仍持续采集与抓拍 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- v0.4.0 需求④：噪音评估记录支持 GPS 定位。WebView 的 navigator.geolocation
+         需要这两项权限（运行时由 Capacitor BridgeWebChromeClient 的
+         onGeolocationPermissionsShowPrompt 拉起授权框）；用户拒绝时 Web 层
+         如实提示并降级为人工填写位置。 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+</manifest>
