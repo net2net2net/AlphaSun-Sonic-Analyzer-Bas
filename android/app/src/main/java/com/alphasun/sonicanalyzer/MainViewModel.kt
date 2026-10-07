@@ -225,7 +225,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var flashUntil = 0L
 
     companion object {
-        const val APP_VERSION = "v1.1.0"   // 与 gradle versionName / index.html APP_VER 统一（见 bump-version.js 第 6 同步点）
+        const val APP_VERSION = "v1.2.0"   // 与 gradle versionName / index.html APP_VER 统一（见 bump-version.js 第 6 同步点）
         private const val TICK_MS = 50L          // 20Hz
         private const val ANALYSIS_MS = 200L     // 5Hz 特征分析
 
