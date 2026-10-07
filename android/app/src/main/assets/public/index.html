@@ -497,7 +497,18 @@
     border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:inherit}
   .gEv button:hover{background:rgba(90,180,255,.18)}
   .gEv audio{height:28px;max-width:230px}
-  .gEv .thumb{width:44px;height:30px;object-fit:cover;border-radius:4px;border:1px solid rgba(120,180,255,.3);cursor:pointer}
+  /* v1.2.0：原 44×30 的可点高度只有 30px，低于 44px 触控标准（手指点不准）。
+     现放到 56×44，并包一层 .thumbWrap 承载"前/后/位移"角标。 */
+  .gEv .thumb{width:56px;height:44px;object-fit:cover;border-radius:5px;border:1px solid rgba(120,180,255,.35);cursor:pointer}
+  .thumbWrap{position:relative;display:inline-flex;min-width:44px;min-height:44px;align-items:center;justify-content:center;
+    border-radius:6px;-webkit-tap-highlight-color:transparent}
+  .thumbWrap:active{transform:scale(.94);filter:brightness(1.2)}
+  .thumbTag{position:absolute;left:0;bottom:0;font-size:9px;line-height:1.1;padding:1px 3px;border-radius:0 4px 0 5px;
+    background:rgba(6,16,30,.86);color:#9fd7ff;border:1px solid rgba(120,180,255,.35);pointer-events:none}
+  .thumbTag.back{color:#ffd76a;border-color:rgba(255,200,80,.45)}
+  .thumbTag.mot{color:#5dffd0;border-color:rgba(60,232,160,.5)}
+  .thumbPlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;
+    color:#eaf6ff;text-shadow:0 2px 10px rgba(0,0,0,.8);pointer-events:none}
   .gEmpty{color:#5d7f9a;font-size:12px;padding:10px}
   .envrep{max-height:260px;overflow:auto;background:rgba(0,0,0,.30);border:1px solid var(--brd);border-radius:10px;
     padding:10px 12px;font-size:12px;line-height:1.65;color:#d8f5e6;white-space:pre-wrap;font-family:Consolas,Menlo,monospace;margin:6px 0}
@@ -512,8 +523,11 @@
   .gMediaTop{display:flex;align-items:center;justify-content:space-between;color:#cfe8ff;font-size:14px}
   .gMediaX{background:rgba(255,255,255,.06);border:1px solid rgba(120,180,255,.35);color:#cfe8ff;border-radius:8px;
     width:40px;height:40px;font-size:16px;cursor:pointer}
-  .gMediaStage{display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);border-radius:12px;min-height:200px;overflow:hidden}
-  .gMediaStage img,.gMediaStage video{max-width:100%;max-height:62vh;border-radius:8px;transition:transform .2s}
+  /* v1.2.0：touch-action:none 是双指捏合/单指拖动生效的前提（否则浏览器先吃掉手势去滚页面） */
+  .gMediaStage{display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);border-radius:12px;
+    min-height:200px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+  .gMediaStage img,.gMediaStage video{max-width:100%;max-height:62vh;border-radius:8px;
+    transform-origin:center center;will-change:transform;transition:transform .12s}
   .gMediaCtl{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   .gMediaCtl button{background:rgba(255,255,255,.06);border:1px solid rgba(120,180,255,.35);color:#cfe8ff;
     border-radius:9px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit;min-height:44px}
@@ -1492,7 +1506,7 @@ body{overscroll-behavior:none}                      /* 移动端下拉刷新不�
         <!-- v0.07 需求①：英文软件名 AlphaSun Sonic Analyzer 的 S 同样用荧光黄，
              与中文标题里的 S 保持一致（此前只有中文标题上了荧光黄）。 -->
         <div class="sub sonic">Alpha<b class="hot2">S</b>un&nbsp;Sonic&nbsp;Analyzer</div>
-        <div class="author"><span id="appVer">v1.1.0</span> · 作者：阳光 net2net2net（ VX: net2net ）</div>
+        <div class="author"><span id="appVer">v1.2.0</span> · 作者：阳光 net2net2net（ VX: net2net ）</div>
       </div>
     </div>
     <!-- v2.5.0 需求②：两枚主操作按钮规格统一（同高 52px / 同圆角 13px / 同阴影量级）；
@@ -3428,7 +3442,7 @@ const OTHER_PROTO=[
 ];
 function clamp01(x){return x<0?0:x>1?1:x;}
 // 「其他声音细化」展示阈值：类置信度 + 模板得分。两处渲染必须共用，否则会出现自相矛盾的 UI
-const APP_VER='1.1.0',APP_BUILD='20261007';
+const APP_VER='1.2.0',APP_BUILD='20261007';
 try{const av=document.getElementById('appVer');
   /* v0.04：作者行原为「v0.04（build 20261004） · 作者：…（ VX: net2net ）」，
      实测在 390/360/320px 屏上整行右边界溢出工具栏 6/36/76px（末尾「）」被切掉）。
@@ -7680,23 +7694,34 @@ function alRenderEvents(){
     row.appendChild(t);row.appendChild(lv);row.appendChild(an);
     if(ev.audioUrl){const au=document.createElement('audio');au.controls=true;au.src=ev.audioUrl;row.appendChild(au);}
     /* v0.4.0 需求③：连拍×3 渲染 —— 前置/后置各最多 3 张缩略图（数组存储） */
-    const th=(url,label)=>{const im=document.createElement('img');im.className='thumb';im.src=url;
-      im.title=label;im.onclick=()=>guardMediaOpen(url,'img');row.appendChild(im);};
-    for(const s of (ev.shotsFront||[]))th(s.url,'前置摄像头连拍');
-    for(const s of (ev.shotsBack||[]))th(s.url,'后置摄像头连拍');
-    for(const s of (ev.shots||[]))th(s.url,'摄像头连拍');
+    /* v1.2.0：缩略图统一包一层 .thumbWrap —— 可点区域撑到 ≥44px（旧实现裸 img 只有 30px 高，
+       手指点不准），并加来源角标（前 / 后 / 摄 / 位移 / GPS），一眼分清是哪路摄像头拍的。 */
+    const mkThumb=(url,label,tag,tagCls,extraCls)=>{
+      const w=document.createElement('span');w.className='thumbWrap';
+      const im=document.createElement('img');
+      im.className='thumb'+(extraCls?(' '+extraCls):'');im.src=url;
+      im.title=label+'（点击放大 · 可旋转）';
+      im.onclick=()=>guardMediaOpen(url,'img');
+      w.appendChild(im);
+      if(tag){const t=document.createElement('span');
+        t.className='thumbTag'+(tagCls?(' '+tagCls):'');t.textContent=tag;w.appendChild(t);}
+      row.appendChild(w);return w;
+    };
+    for(const s of (ev.shotsFront||[]))mkThumb(s.url,'前置摄像头连拍','前');
+    for(const s of (ev.shotsBack||[]))mkThumb(s.url,'后置摄像头连拍','后','back');
+    for(const s of (ev.shots||[]))mkThumb(s.url,'摄像头连拍','摄');
     /* v1.0.2 需求①：位移时刻留证缩略图（带 📱 标识，点开可旋转查看） */
-    for(const s of (ev.mShots||[])){const im=document.createElement('img');im.className='thumb mthumb';im.src=s.url;
-      im.title=(s.kind==='gps'
+    for(const s of (ev.mShots||[]))mkThumb(s.url,(s.kind==='gps'
         ? ('GPS 位移留证（离开基线 '+(s.dist||0).toFixed(0)+' 米 · '+(s.camLabel||'')+'）')
-        : ('手机位移留证（强度 '+(s.inten||0).toFixed(2)+(s.rot?' · 转动':' · 移动')+' · '+(s.camLabel||'')+'）'));
-      im.onclick=()=>guardMediaOpen(s.url,'img');row.appendChild(im);}
-    if(ev.videoUrl){const vb=document.createElement('button');vb.textContent='▶ 视频';
-      vb.onclick=()=>guardMediaOpen(ev.videoUrl,'video');row.appendChild(vb);}
-    if(ev.videoFrontUrl){const vb=document.createElement('button');vb.textContent='▶ 前摄';
-      vb.onclick=()=>guardMediaOpen(ev.videoFrontUrl,'video');row.appendChild(vb);}
-    if(ev.videoBackUrl){const vb=document.createElement('button');vb.textContent='▶ 后摄';
-      vb.onclick=()=>guardMediaOpen(ev.videoBackUrl,'video');row.appendChild(vb);}
+        : ('手机位移留证（强度 '+(s.inten||0).toFixed(2)+(s.rot?' · 转动':' · 移动')+' · '+(s.camLabel||'')+'）')),
+      (s.kind==='gps'?'GPS':'位移'),'mot','mthumb');
+    /* v1.2.0：录像同样一键点开（灯箱内可放大、可旋转，与照片同一套操作） */
+    const mkVid=(url,label)=>{const vb=document.createElement('button');vb.textContent='▶ '+label;
+      vb.title=label+'录像（点击播放 · 可放大 · 可旋转）';
+      vb.onclick=()=>guardMediaOpen(url,'video');row.appendChild(vb);};
+    if(ev.videoFrontUrl)mkVid(ev.videoFrontUrl,'前摄');
+    if(ev.videoBackUrl)mkVid(ev.videoBackUrl,'后摄');
+    if(ev.videoUrl)mkVid(ev.videoUrl,'录像');
     const be=document.createElement('button');be.textContent='导出';
     be.onclick=()=>{
       l2Dl(new Blob([alEvAnalysis(ev)],{type:'text/plain'}),alEvName(ev,'分析')+'.txt');
@@ -7715,16 +7740,97 @@ function alRenderEvents(){
     box.appendChild(row);
   }
 }
-let gMediaRot=0;
+/* ===== v1.2.0：事件日志影像查看器 —— 放大 + 旋转 =====
+   需求：前后摄拍到的照片/视频要在事件日志里能看，且**可放大、可旋转**。
+   旧实现只有"打开灯箱 + 三个旋转按钮"，**没有缩放**：手机上看 1280×720 的抓拍，
+   人脸/车牌/仪表读数这类细节根本辨认不出，留证价值大打折扣。
+   现补三种放大入口 + 平移（缩放>1 时才能拖）：
+     · 按钮 ＋/−/1:1 —— 最稳，任何设备都可用（触屏上双指也不一定好使）
+     · 双击 与 双指捏合 —— 移动端直觉操作
+     · 鼠标滚轮 —— 桌面
+   旋转沿用 ⟲/⟳/复位，并与缩放、平移合成同一个 transform（顺序固定：
+   translate → rotate → scale，否则旋转后平移方向会跟着转，手感错乱）。 */
+let gMediaRot=0,gMediaScale=1,gMediaPX=0,gMediaPY=0;
+const GMEDIA_MIN=0.5,GMEDIA_MAX=8;
+function gMediaEl(){const img=$('gMediaImg'),vid=$('gMediaVid');
+  return (img&&img.style.display!=='none')?img:vid;}
+function gMediaClamp(s){if(typeof s!=='number'||!isFinite(s))return 1;
+  return Math.max(GMEDIA_MIN,Math.min(GMEDIA_MAX,s));}
+function gMediaApply(){
+  const el=gMediaEl();if(!el)return;
+  el.style.transform='translate('+gMediaPX.toFixed(1)+'px,'+gMediaPY.toFixed(1)+'px) '
+    +'rotate('+gMediaRot+'deg) scale('+gMediaScale.toFixed(3)+')';
+  const t=$('gMediaTtl');
+  if(t)t.textContent='媒体预览 · 缩放 '+Math.round(gMediaScale*100)+'% · 旋转 '+gMediaRot+'°';
+}
+function gMediaResetView(){gMediaRot=0;gMediaScale=1;gMediaPX=0;gMediaPY=0;gMediaApply();}
+/* f>1 放大。缩回 1 倍附近时自动归位平移，避免画面停在角落回不来 */
+function guardMediaZoom(f){
+  const s0=gMediaScale;
+  const s1=gMediaClamp(s0*(typeof f==='number'&&isFinite(f)?f:1));
+  if(Math.abs(s1-s0)<1e-6)return;
+  gMediaScale=s1;
+  if(s1<=1.001){gMediaPX=0;gMediaPY=0;}
+  gMediaApply();
+}
+function guardMediaPan(dx,dy){
+  if(gMediaScale<=1.001)return;      // 1 倍时不许拖，免得把画面拖出可视区
+  gMediaPX+=dx;gMediaPY+=dy;gMediaApply();
+}
 function guardMediaOpen(url,kind){
-  const m=$('gMedia');if(!m)return;const img=$('gMediaImg'),vid=$('gMediaVid');gMediaRot=0;
+  const m=$('gMedia');if(!m)return;const img=$('gMediaImg'),vid=$('gMediaVid');
+  gMediaRot=0;gMediaScale=1;gMediaPX=0;gMediaPY=0;
   if(kind==='video'){img.style.display='none';vid.style.display='block';vid.src=url;vid.style.transform='';
     try{vid.play().catch(()=>{});}catch(_){}}
   else{vid.style.display='none';img.style.display='block';img.src=url;img.style.transform='';}
-  m.style.display='flex';}
+  m.style.display='flex';gMediaApply();}
 function guardMediaClose(){const m=$('gMedia');if(!m)return;const vid=$('gMediaVid');try{if(vid)vid.pause();}catch(_){}m.style.display='none';}
-function guardMediaRot(d){gMediaRot=(gMediaRot+d)%360;const el=($('gMediaImg').style.display!=='none')?$('gMediaImg'):$('gMediaVid');
-  if(el)el.style.transform='rotate('+gMediaRot+'deg)';}
+function guardMediaRot(d){gMediaRot=((gMediaRot+d)%360+360)%360;gMediaApply();}
+/* 手势绑定：双指捏合缩放 / 单指拖动平移 / 双击放大还原 / 桌面滚轮缩放 */
+(function(){
+  const st=$('gMediaStage');if(!st)return;
+  let lastDist=0,lastPt=null,moved=false,lastTap=0;
+  const D=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  const P=t=>({x:t.clientX,y:t.clientY});
+  st.addEventListener('touchstart',e=>{
+    if(e.touches.length>=2)lastDist=D(e.touches[0],e.touches[1]);
+    else if(e.touches.length===1)lastPt=P(e.touches[0]);
+    moved=false;
+  },{passive:true});
+  st.addEventListener('touchmove',e=>{
+    if(e.touches.length>=2){
+      const d=D(e.touches[0],e.touches[1]);
+      if(lastDist>0)guardMediaZoom(d/lastDist);
+      lastDist=d;moved=true;
+      if(e.cancelable)e.preventDefault();
+    }else if(e.touches.length===1&&lastPt){
+      const p=P(e.touches[0]);
+      guardMediaPan(p.x-lastPt.x,p.y-lastPt.y);
+      lastPt=p;moved=true;
+      if(e.cancelable)e.preventDefault();
+    }
+  },{passive:false});
+  st.addEventListener('touchend',()=>{
+    const now=Date.now();
+    if(!moved){
+      /* 双击（320ms 内两次点按）在 1 倍与 3 倍间切换；单击不动，免得误触 */
+      if(now-lastTap<320){if(gMediaScale>1.05)gMediaResetView();else guardMediaZoom(3);lastTap=0;}
+      else lastTap=now;
+    }
+    lastDist=0;lastPt=null;
+  },{passive:true});
+  /* ⚠ 触屏上浏览器会合成 dblclick，若与上面的双击判定重复绑定会互相抵消
+     （放大后立刻被还原）。故仅在非粗指针（鼠标）设备上绑 dblclick。 */
+  const coarse=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
+  if(!coarse)st.addEventListener('dblclick',e=>{
+    if(e.cancelable)e.preventDefault();
+    if(gMediaScale>1.05)gMediaResetView();else guardMediaZoom(3);
+  });
+  st.addEventListener('wheel',e=>{
+    if(e.cancelable)e.preventDefault();
+    guardMediaZoom(Math.exp(-(e.deltaY||0)*0.0015));
+  },{passive:false});
+})();
 /* ---------- 摄像头（告警时抓拍 / 录像）----------
    v0.05 需求⑥：告警触发时**同时**调用前置与后置摄像头各抓拍一张（并可各录一段）。
    实现要点：
@@ -8828,7 +8934,10 @@ $('alertClrLog').addEventListener('click',()=>{const L=$('alertLog');if(!L)retur
 $('gMediaX').addEventListener('click',guardMediaClose);
 $('gRotL').addEventListener('click',()=>guardMediaRot(-90));
 $('gRotR').addEventListener('click',()=>guardMediaRot(90));
-$('gRot0').addEventListener('click',()=>guardMediaRot(-gMediaRot));
+/* v1.2.0：缩放按钮（gRot0 已由「1:1 还原」取代：一次复位缩放+旋转+平移） */
+$('gZoomIn').addEventListener('click',()=>guardMediaZoom(1.4));
+$('gZoomOut').addEventListener('click',()=>guardMediaZoom(1/1.4));
+$('gZoom1').addEventListener('click',gMediaResetView);
 // 摄像头设备枚举（需先获得过权限才能拿到可用 label）
 (async()=>{try{
   const ds=await navigator.mediaDevices.enumerateDevices();
@@ -9522,8 +9631,16 @@ resize();frame();
     <div class="gMedia" id="gMedia" style="display:none">
       <div class="gMediaBox">
         <div class="gMediaTop"><span id="gMediaTtl">媒体预览</span><button class="gMediaX" id="gMediaX">✕</button></div>
-        <div class="gMediaStage"><img id="gMediaImg" alt="" style="display:none"><video id="gMediaVid" style="display:none" controls playsinline></video></div>
-        <div class="gMediaCtl"><button id="gRotL">⟲ 左转 90°</button><button id="gRot0">复位</button><button id="gRotR">右转 90° ⟳</button></div>
+        <!-- ⚠ id 不能少：v1.2.0 的捏合缩放/双击/滚轮手势都绑在 $('#gMediaStage') 上，
+             缺 id 时 $() 返回 null，手势静默失效（validate.js 的 DOM 引用校验可捕获）。 -->
+        <div class="gMediaStage" id="gMediaStage"><img id="gMediaImg" alt="" style="display:none"><video id="gMediaVid" style="display:none" controls playsinline></video></div>
+        <div class="gMediaCtl">
+          <button id="gZoomOut" title="缩小（也可双指捏合 / 滚轮）">－ 缩小</button>
+          <button id="gZoom1" title="还原到原始大小与角度">1:1 还原</button>
+          <button id="gZoomIn" title="放大（也可双击 / 双指张开 / 滚轮）">＋ 放大</button>
+          <button id="gRotL" title="逆时针旋转 90°">⟲ 左转 90°</button>
+          <button id="gRotR" title="顺时针旋转 90°">右转 90° ⟳</button>
+        </div>
       </div>
     </div>
   </div>
