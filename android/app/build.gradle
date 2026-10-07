@@ -18,8 +18,8 @@ android {
         // ⚠ 本行是唯一权威 versionCode；上方注释禁止出现 "versionCode <数字>" 字样
         //   （2026-10-05 事故：bump 脚本"替换首个匹配"曾把注释改了、实际值漏改，
         //    导致 APK versionCode 停在 7 而六点回读误报 9。脚本已改为整行锚定。）
-        versionCode 16
-        versionName "1.1.0"
+        versionCode 17
+        versionName "1.2.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
