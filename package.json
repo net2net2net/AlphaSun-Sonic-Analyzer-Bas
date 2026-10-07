@@ -1,6 +1,6 @@
 {
   "name": "alphasun-sonic-analyzer",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "AlphaSun Sonic Analyzer 声波分析仪 — 移动端（Android/iOS）实时声波频谱分析与警戒值守",
   "author": "阳光 net2net2net (VX: net2net)",
