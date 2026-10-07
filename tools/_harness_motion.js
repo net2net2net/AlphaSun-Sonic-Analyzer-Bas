@@ -145,7 +145,8 @@ check('红警触发抓拍在', /alCamTrigger\(\);alNotify/.test(raw));
 check('前后双摄串行抓拍在', /前后双摄|alertCamDual/.test(raw) && /camBusy/.test(raw));
 check('麦克风录音（AudioWorklet）在', /as-rec/.test(raw) && /AudioWorkletNode/.test(raw));
 check('录像（MediaRecorder）在', /MediaRecorder/.test(raw));
-check('媒体查看器旋转按钮在', /id="gRotL"/.test(raw) && /id="gRotR"/.test(raw) && /id="gRot0"/.test(raw));
+check('媒体查看器旋转按钮在', /id="gRotL"/.test(raw) && /id="gRotR"/.test(raw));
+check('媒体查看器复位按钮在（1:1 还原）', /id="gZoom1"/.test(raw));
 check('旋转函数在', /function guardMediaRot/.test(raw));
 check('镜头切换只占用一路（WebView 限制注释保留）', /移动端同开两路会失败|无法同时占用两路视频/.test(raw));
 /* v1.1.0：不应再残留旧函数名 alMotStore（已拆为 alMoveAcc + alMotAttach） */
@@ -165,6 +166,32 @@ check('GPSCFG 参数块排在设置绑定之前（防 TDZ）', iGpsCfg >= 0 && i
   'GPSCFG@' + iGpsCfg + ' < 绑定@' + iBind);
 check('设置绑定 IIFE 全局仅一处（防重复注册监听）',
   (raw.match(/const th=\$\('alertMotTh'\)/g) || []).length === 1);
+
+// A13. v1.2.0：事件日志影像展示 + 放大/旋转
+['gZoomIn', 'gZoomOut', 'gZoom1'].forEach(id =>
+  check('缩放按钮 #' + id + ' 存在', new RegExp('id="' + id + '"').test(raw)));
+['guardMediaOpen', 'guardMediaClose', 'guardMediaRot', 'guardMediaZoom', 'guardMediaPan',
+ 'gMediaApply', 'gMediaResetView', 'gMediaClamp'].forEach(fn =>
+  check('查看器函数 ' + fn + ' 已定义', new RegExp('function\\s+' + fn + '\\s*\\(').test(raw)));
+check('缩放上下限常量就位', /const GMEDIA_MIN=[\d.]+,GMEDIA_MAX=[\d.]+;/.test(raw));
+check('灯箱舞台禁用默认手势（捏合/拖动前提）', /\.gMediaStage\{[^}]*touch-action:none/.test(raw));
+/* JS 用 $('#gMediaStage') 绑手势；缺 id 时 $() 返回 null，手势静默失效（validate.js 抓到过） */
+check('灯箱舞台带 id（手势绑定前提）', /id="gMediaStage"/.test(raw));
+check('缩略图可点区域 ≥44px（触控标准）', /\.gEv \.thumb\{width:56px;height:44px/.test(raw));
+check('缩略图外框样式在', /\.thumbWrap\{/.test(raw) && /min-height:44px/.test(raw));
+check('缩略图来源角标样式在', /\.thumbTag\{/.test(raw));
+const renderB = raw.slice(raw.indexOf('function alRenderEvents'), raw.indexOf('let gMediaRot'));
+check('前后摄照片都走带角标的缩略图', /mkThumb\(s\.url,'前置摄像头连拍','前'\)/.test(renderB) &&
+  /mkThumb\(s\.url,'后置摄像头连拍','后','back'\)/.test(renderB));
+check('位移留证缩略图带 GPS/位移角标', /mkThumb[\s\S]{0,400}?'GPS':'位移'/.test(renderB));
+check('录像按钮挂到灯箱（video）', /guardMediaOpen\(url,'video'\)/.test(renderB));
+check('照片点击进灯箱（img）', /guardMediaOpen\(url,'img'\)/.test(renderB));
+check('触屏不重复绑 dblclick（防放大被抵消）', /pointer:coarse/.test(raw) && /if\(!coarse\)/.test(raw));
+check('缩放按钮已绑定', /\$\('gZoomIn'\)\.addEventListener/.test(raw) && /\$\('gZoomOut'\)\.addEventListener/.test(raw));
+check('transform 顺序固定为 平移→旋转→缩放',
+  /'translate\('[\s\S]{0,160}?'rotate\('[\s\S]{0,120}?scale\('/.test(raw));
+check('缩放回 1 倍自动归位平移', /if\(s1<=1\.001\)\{gMediaPX=0;gMediaPY=0;\}/.test(raw));
+check('1 倍时禁止拖动（防画面拖出可视区）', /if\(gMediaScale<=1\.001\)return;/.test(raw));
 
 /* ============ B. 陀螺仪行为：原样抽出算法跑数值用例 ============ */
 function extractConst(name) {
@@ -289,6 +316,72 @@ if (GPS_SRC && DIST_SRC && OK_SRC && earthM) {
       'need=' + need1 + 'm');
     const need2 = Math.max(GPSCFG.hitM, 50 + 50);
     check('精度圈重叠时提高门限（80m 也不触发）', 80 < need2, 'need=' + need2 + 'm');
+  }
+}
+
+/* ============ D. 影像查看器行为：原样抽出缩放/旋转逻辑跑数值用例 ============ */
+const gmConst = raw.match(/const GMEDIA_MIN=([\d.]+),GMEDIA_MAX=([\d.]+);/);
+const CLAMP_SRC = sliceFn('gMediaClamp');
+const ZOOM_SRC = sliceFn('guardMediaZoom');
+const PAN_SRC = sliceFn('guardMediaPan');
+const ROT_SRC = sliceFn('guardMediaRot');
+check('GMEDIA 常量可抽取', !!gmConst);
+check('gMediaClamp 源码可抽取', !!CLAMP_SRC);
+check('guardMediaZoom 源码可抽取', !!ZOOM_SRC);
+check('guardMediaPan 源码可抽取', !!PAN_SRC);
+check('guardMediaRot 源码可抽取', !!ROT_SRC);
+
+if (gmConst && CLAMP_SRC && ZOOM_SRC && PAN_SRC && ROT_SRC) {
+  const factory3 = new Function(
+    'const GMEDIA_MIN=' + gmConst[1] + ',GMEDIA_MAX=' + gmConst[2] + ';\n' +
+    'let gMediaRot=0,gMediaScale=1,gMediaPX=0,gMediaPY=0;\n' +
+    'function gMediaApply(){}\n' +
+    CLAMP_SRC + '\n' + ZOOM_SRC + '\n' + PAN_SRC + '\n' + ROT_SRC + '\n' +
+    'return {state:function(){return {rot:gMediaRot,scale:gMediaScale,x:gMediaPX,y:gMediaPY};},' +
+    'set:function(s){if(s.scale!=null)gMediaScale=s.scale;if(s.x!=null)gMediaPX=s.x;' +
+    'if(s.y!=null)gMediaPY=s.y;if(s.rot!=null)gMediaRot=s.rot;},' +
+    'gMediaClamp:gMediaClamp,guardMediaZoom:guardMediaZoom,' +
+    'guardMediaPan:guardMediaPan,guardMediaRot:guardMediaRot};');
+  let v = null;
+  try { v = factory3(); }
+  catch (e) { check('查看器算法可独立执行', false, e.message.slice(0, 120)); }
+
+  if (v) {
+    check('查看器算法可独立执行', true);
+    const MIN = parseFloat(gmConst[1]), MAX = parseFloat(gmConst[2]);
+    const { gMediaClamp, guardMediaZoom, guardMediaPan, guardMediaRot } = v;
+    check('缩放下限钳制', gMediaClamp(0.01) === MIN, String(MIN));
+    check('缩放上限钳制', gMediaClamp(999) === MAX, String(MAX));
+    check('区间内数值不改动', gMediaClamp(2.5) === 2.5);
+    check('非法输入回落 1（不崩）', gMediaClamp(NaN) === 1 && gMediaClamp(undefined) === 1);
+
+    v.set({ scale: 1, x: 0, y: 0 });
+    guardMediaZoom(1.4);
+    check('点一次放大生效', Math.abs(v.state().scale - 1.4) < 1e-9, v.state().scale.toFixed(3));
+    for (let i = 0; i < 20; i++) guardMediaZoom(1.4);
+    check('连续放大不超上限', v.state().scale === MAX, String(v.state().scale));
+    for (let i = 0; i < 30; i++) guardMediaZoom(1 / 1.4);
+    check('连续缩小不低于下限', v.state().scale === MIN, String(v.state().scale));
+
+    v.set({ scale: 2, x: 60, y: -40 });
+    guardMediaZoom(0.5);
+    check('缩回 1 倍自动归位平移',
+      v.state().scale <= 1.001 && v.state().x === 0 && v.state().y === 0);
+
+    v.set({ scale: 1, x: 0, y: 0 });
+    guardMediaPan(30, 20);
+    check('1 倍时拖动被忽略', v.state().x === 0 && v.state().y === 0);
+    v.set({ scale: 2.5, x: 0, y: 0 });
+    guardMediaPan(30, 20);
+    check('放大后可拖动平移', v.state().x === 30 && v.state().y === 20);
+
+    v.set({ rot: 0 });
+    guardMediaRot(-90);
+    check('左转 90° 归一为 270（不出现负角）', v.state().rot === 270, v.state().rot + '°');
+    guardMediaRot(90);
+    check('再右转 90° 回到 0', v.state().rot === 0);
+    guardMediaRot(450);
+    check('超过 360° 正确归一', v.state().rot === 90, v.state().rot + '°');
   }
 }
 
