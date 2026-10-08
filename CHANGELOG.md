@@ -43,6 +43,12 @@
 - `tools/check.js` 三处源码 md5 一致 + 离线资源完整：通过。
 - 重建 Android APK（versionCode 18）/ 触发 iOS 无签名 IPA（build 18）。
 
+### 文档清理（2026-10-08 补充）
+- 删除过时文档：`docs/IOS-BUILD.md`（仍写"尚未生成 ios/"，已被构建指南取代）、
+  `docs/架构说明.md`（描述桌面 v2.x 线结构，与移动线不符）、`docs/prd-voice-incremental.md`（桌面线语音增量 PRD 归档）。
+- `docs/测试与回归.md` 修正过时数字（320→384 DOM id、159→173 E 映射、五点→六点版本）与双线表述。
+- README 移除对已删 `IOS-BUILD.md` 的引用。
+
 ---
 
 ## v1.2.0（2026-10-07）· web 框架线 —— 事件日志影像：前后摄照片/录像可放大可旋转
