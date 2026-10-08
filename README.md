@@ -1,4 +1,4 @@
-# AlphaSun Sonic Analyzer 声波分析仪（移动版 ）
+# AlphaSun Sonic Analyzer 声波分析仪（移动版）
 
 > **本仓库是独立软件**，从 `AlphaSun-AudioSpectrumLab`（桌面版）派生，**与桌面版互不影响**。
 > 包名 `com.alphasun.sonicanalyzer`，与桌面版 `com.alphasun.audiolab` **并存安装、互不覆盖**。
