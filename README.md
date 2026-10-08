@@ -9,19 +9,19 @@
 
 ## 〇、下载与仓库
 
-**当前版本：v1.2.0（versionCode 17 / CFBundleVersion 17）**
+**当前版本：v1.3.0（versionCode 18 / CFBundleVersion 18）**
 
 | 平台 | 产物 | 说明 |
 |---|---|---|
-| Android | `AlphaSun-Sonic-Analyzer-1.2.0-mobile.apk` | 已签名直装，armeabi-v7a/arm64-v8a |
-| iOS | `AlphaSun-Sonic-Analyzer-1.2.0-ios-unsigned.ipa` | iPhone/iPad 通用，**未签名**，需重签后安装 |
+| Android | `AlphaSun-Sonic-Analyzer-1.3.0-mobile.apk` | 已签名直装，armeabi-v7a/arm64-v8a |
+| iOS | `AlphaSun-Sonic-Analyzer-1.3.0-ios-unsigned.ipa` | iPhone/iPad 通用，**未签名**，需重签后安装 |
 
 **发布页（含全部历史版本附件）**
 
 | 平台 | Release |
 |---|---|
-| GitHub | https://github.com/net2net2net/AlphaSun-Sonic-Analyzer-Bas/releases/tag/v1.2.0-sonic |
-| Gitee | https://gitee.com/net2net2net/alpha-sun-sonic-analyzer-bas/releases/v1.2.0-sonic |
+| GitHub | https://github.com/net2net2net/AlphaSun-Sonic-Analyzer-Bas/releases/tag/v1.3.0-sonic |
+| Gitee | https://gitee.com/net2net2net/alpha-sun-sonic-analyzer-bas/releases/v1.3.0-sonic |
 
 **源码仓库（双平台同步，内容一致）**
 
@@ -47,7 +47,7 @@
 |---|---|---|
 | 包名 | `com.alphasun.audiolab` | **`com.alphasun.sonicanalyzer`** |
 | 应用名 | AlphaSun 声波分析仪 | **AlphaSun Sonic Analyzer** |
-| 版本 | v2.24.1 | **v1.2.0**（versionCode 17） |
+| 版本 | v2.24.1 | **v1.3.0**（versionCode 18） |
 | 二级分析台 | 有 | **已下线** |
 | 音频工具集 | 有（转写/环境采集/值守） | **已下线**，仅保留**警戒值守**（改名，提到主操作条） |
 | CPU / 内存 展示 | 有 | **已移除**（移动端无系统级权限，原本恒为 —） |
@@ -116,11 +116,13 @@
 | **次版本** (y) | **已有功能的显著增强**（新增选项、新增参数、新增导出格式），向后兼容 | `1.0.0 → 1.1.0`：雷达图清晰化重写、分离试听链路 |
 | **修订号** (z) | **修缺陷、优化、小幅调整**，不影响功能与接口 | `1.1.0 → 1.1.1`：修复作者行溢出、修复弹层级 |
 
-**当前版本：v1.2.0（versionCode 17）** —— web 框架线从 0.3.0 跳续 0.7.0 → 0.8.0 → 0.9.0 → 0.9.1 → 1.0.0 → 1.0.1 → 1.0.2 → 1.1.0 → 1.2.0（原生线历史已占用 0.4.0~0.6.4 号段）；已达 1.0.0 稳定期，次版本（1.x）改动严格保持向后兼容。
+**当前版本：v1.3.0（versionCode 18）** —— web 框架线从 0.3.0 跳续 0.7.0 → 0.8.0 → 0.9.0 → 0.9.1 → 1.0.0 → 1.0.1 → 1.0.2 → 1.1.0 → 1.2.0 → 1.3.0（原生线历史已占用 0.4.0~0.6.4 号段）；已达 1.0.0 稳定期，次版本（1.x）改动严格保持向后兼容。
 
 **v1.0.2 新增**：声波警戒支持**手机位移触发**（陀螺仪/加速度计，静止基线法判定「从无变化到变化」，自动抓拍留证）；值守台新增位移状态实时芯片（校准中/静止/位移计数三态）；全界面竖横屏与触摸适配强化，位移相关 UI 与状态芯片按科幻风强化。
 
 **v1.2.0 新增**：事件日志里的前后摄照片与录像**可放大、可旋转** —— 灯箱补齐缩放能力（按钮 ＋/−/1:1、双击、双指捏合、桌面滚轮，范围 0.5×~8×，放大后可拖动平移，缩回 1 倍自动归位），旋转与缩放合成同一 transform；缩略图可点区域放大到 56×44（原 44×30 低于触控标准）并加 `前/后/摄/位移/GPS` 来源角标；录像按钮统一标注来源，点开同样可放大旋转。
+
+**v1.3.0 新增**：噪音评估内「开始采集 / 暂停」一体键负责主采集启停（进入噪音评估即暂停主采集，关闭面板回到主界面初始态）；声波警戒相机抓拍失败**诊断可见化** —— 事件日志【影像留证】在「无照片」时明确输出失败根因（权限被拒 / 无设备 / 被占用 / WebView 不支持等），原生相机桥接待后续上。
 
 **v1.1.0 新增**：位移检测补上第二个来源 **GPS 位置变化**（Haversine 球面距离 + 定位精度过滤 + 基线锁定，与陀螺仪互补；Android 沿用 v0.4.0 已声明的定位权限，iOS 新增 `NSLocationWhenInUseUsageDescription`）；**事件日志三段化** —— 每条事件固定输出「告警内容」「手机位移」（含 GPS 轨迹坐标）「影像留证」（前置/后置照片与录像一并列出）；修正「位移只在抓拍成功时才入账」的缺陷（关掉抓拍或摄像头被占用时位移曾从日志里消失），改为检测即入账；导出 CSV 增加位移与 GPS 统计列；位移门禁升级为静态契约 + 陀螺仪行为 + GPS 行为三层（132 项断言）。详见 [`CHANGELOG.md`](CHANGELOG.md)。
 
