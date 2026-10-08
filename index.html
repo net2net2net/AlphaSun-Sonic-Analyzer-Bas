@@ -1506,7 +1506,7 @@ body{overscroll-behavior:none}                      /* 移动端下拉刷新不�
         <!-- v0.07 需求①：英文软件名 AlphaSun Sonic Analyzer 的 S 同样用荧光黄，
              与中文标题里的 S 保持一致（此前只有中文标题上了荧光黄）。 -->
         <div class="sub sonic">Alpha<b class="hot2">S</b>un&nbsp;Sonic&nbsp;Analyzer</div>
-        <div class="author"><span id="appVer">v1.2.0</span> · 作者：阳光 net2net2net（ VX: net2net ）</div>
+        <div class="author"><span id="appVer">v1.3.0</span> · 作者：阳光 net2net2net（ VX: net2net ）</div>
       </div>
     </div>
     <!-- v2.5.0 需求②：两枚主操作按钮规格统一（同高 52px / 同圆角 13px / 同阴影量级）；
@@ -1953,10 +1953,10 @@ body{overscroll-behavior:none}                      /* 移动端下拉刷新不�
         <h3><span class="ic i1"></span>⏱ 测量控制</h3>
         <div class="row"><span class="k">会话状态</span><span class="v" id="nzSesV">未开始</span></div>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-          <button class="snap" id="nzToggleBtn" style="flex:2;min-width:120px">▶ 开始测量</button>
+          <button class="snap" id="nzToggleBtn" style="flex:2;min-width:120px">▶ 开始采集</button>
           <button class="snap" id="nzFinishBtn" style="flex:1.4;min-width:120px" disabled>⏹ 结束并记录</button>
         </div>
-        <div class="hintline">点「开始测量」计入本次会话；再次点同一按钮可暂停/继续；「结束并记录」把当前 Leq/峰值/类型/位置快照存入下方测量记录。需先在主界面开始采集。</div>
+        <div class="hintline">点「开始采集」在此面板启动声波采集（进入本面板会自动暂停主采集）；再次点同一按钮可暂停；「结束并记录」把当前 Leq/峰值/类型/位置快照存入下方测量记录。</div>
       </div>
 
       <div class="card">
@@ -2640,11 +2640,7 @@ function nzSesSet(st){
   const v=nzEl('nzSesV');
   if(v){v.textContent=({idle:'未开始',running:'测量中',paused:'已暂停'})[st]||st;
     v.style.color=({running:'#3ce8a0',paused:'#ffc94d'})[st]||'';}
-  const tg=nzEl('nzToggleBtn'),b3=nzEl('nzFinishBtn');
-  if(tg){
-    tg.disabled=false;   // 单按钮始终可点：idle→开始 / running→暂停 / paused→继续
-    tg.textContent= st==='running'?'⏸ 暂停':(st==='paused'?'▶ 继续':'▶ 开始测量');
-  }
+  const b3=nzEl('nzFinishBtn');
   if(b3)b3.disabled=st==='idle';
   /* v0.8.0 操控改善：底栏「噪音评估」按钮同步反映测量状态——
      弹层关闭后用户仍能一眼看到会话在跑（绿=测量中/黄=暂停/默认=未开始） */
@@ -2668,10 +2664,23 @@ function nzPause(){
     NZ.ses.st='running';nzSesSet('running');
   }
 }
-/* v1.0.1 需求③：开始/暂停合并为单按钮 —— idle 点开始；running 点暂停；paused 点继续 */
+/* v1.3.0 需求①：噪音评估里的「开始测量」键改为控制主采集启停的一体键。
+   文案随 running 切换「开始采集 / 暂停采集」（见 nzAcqBtnSync）；
+   进入噪音评估会自动暂停主采集，由该键在面板内重新启动 / 暂停声波采集。 */
+function nzAcqBtnSync(){
+  const tg=nzEl('nzToggleBtn');
+  if(!tg)return;
+  tg.textContent= running ? '⏸ 暂停采集' : '▶ 开始采集';
+}
 function nzToggle(){
-  if(NZ.ses.st==='idle')nzStart();
-  else nzPause();   // nzPause 内部按状态 toggle 暂停/继续
+  if(running){ stop(); return; }
+  /* 启动采集后同步开启噪音测量会话（让「结束并记录」可用）；
+     采集启动失败则 running 仍为 false，不开启会话。 */
+  start().then(()=>{
+    if(!running)return;
+    if(NZ.ses.st==='idle')nzStart();
+    else if(NZ.ses.st==='paused')nzPause();   // 恢复测量
+  }).catch(()=>{});
 }
 function nzFinish(){
   if(NZ.ses.st==='idle'){toast('尚未开始测量');return;}
@@ -3442,7 +3451,7 @@ const OTHER_PROTO=[
 ];
 function clamp01(x){return x<0?0:x>1?1:x;}
 // 「其他声音细化」展示阈值：类置信度 + 模板得分。两处渲染必须共用，否则会出现自相矛盾的 UI
-const APP_VER='1.2.0',APP_BUILD='20261007';
+const APP_VER='1.3.0',APP_BUILD='20261008';
 try{const av=document.getElementById('appVer');
   /* v0.04：作者行原为「v0.04（build 20261004） · 作者：…（ VX: net2net ）」，
      实测在 390/360/320px 屏上整行右边界溢出工具栏 6/36/76px（末尾「）」被切掉）。
@@ -5758,7 +5767,7 @@ async function start(){
   verdPending='';verdRun=0;verdShown='';verdShownPrev='';verdictTraceTxt='';lastGuessKey='';
   for(const k in TRACE)delete TRACE[k];                     // v2.2.0：留痕节流状态复位
   E.engine.className='chip live';E.engineB.textContent='采集中';E.hint.style.opacity='0';
-  E.capBtn.classList.remove('paused');E.capTxt.textContent='暂停采集';running=true;E.status.textContent='';E.status.className=''; // v2.8.0：常规状态文字已移除
+  E.capBtn.classList.remove('paused');E.capTxt.textContent='暂停采集';running=true;E.status.textContent='';E.status.className='';try{nzAcqBtnSync();}catch(_){} // v2.8.0：常规状态文字已移除
   setChain(true);                                       // v2.8.0：setChain 已随顶部横排链路移除成为空操作（保留调用点兼容）
   E.verTxt.textContent='检测中…';E.verDot.style.background='var(--cy)';
   setupASR();if(recog)try{recog.start();asrStartT=performance.now();}catch(_){}resize();frame();analyzeLoop();
@@ -5786,12 +5795,14 @@ function releaseMainAcq(){
   try{audioCtx=null;}catch(_){}
   try{if(recog)recogStopSession();}catch(_){}
 }
-function stop(){running=false;setChain(false);if(raf)cancelAnimationFrame(raf);
+function stop(){const _wasRunning=running;running=false;setChain(false);if(raf)cancelAnimationFrame(raf);
   recogStopSession();   // v2.23.0：真正终止识别会话（置 null），杜绝会话堆积占麦
   // v2.5.0：二级台正借用主流录制时先正常收尾（否则 tracks 被直接掐断，onstop 只能拿到残缺音频）
   if(typeof L2!=='undefined'&&L2&&L2.recOn){try{l2RecToggle().catch(()=>{});}catch(_){}}
   releaseMainAcq();     // v2.23.2：释放主流 + AudioContext（记录 close Promise 供自愈等待）
   E.engine.className='chip';E.engineB.textContent='待机';E.capBtn.classList.add('paused');E.capTxt.textContent='开始采集';
+  try{nzAcqBtnSync();}catch(_){}
+  try{ if(_wasRunning&&NZ.ses&&NZ.ses.st==='running'){NZ.ses.st='paused';NZ.ses.pauseT0=performance.now();nzSesSet('paused');} }catch(_){}
   E.hint.style.opacity='1';E.status.textContent='';E.status.className='';E.levelFill.style.width='0%';
   E.dbMeter.style.width='0%';E.dbPeak.style.left='0%';dbPeakV=0; // v2.8.0：电平表复位
   E.cmfLamp.className='cmf-lamp';E.cmfV.textContent='—';E.cmfV.style.color=''; // v2.2.0：舒适灯复位
@@ -7346,7 +7357,7 @@ const GUARD={
   t0:null,evalBuf:[],evalT0:null,evalSec:5,
   ev:null,evs:[],pcm:[],pcmLen:0,
   wave:new Float32Array(600),wpos:0,raf:null,
-  camStream:null,camRec:null,camChunks:[],camBusy:false,
+  camStream:null,camRec:null,camChunks:[],camBusy:false,camErr:'',
   relHeld:0,lastDb:-1e9,seq:0,paused:false,pauseT0:0,pauseAcc:0,
   /* v1.0.2 需求①：手机位移（陀螺仪/加速度计）触发。
      检测"从静止到发生变化"——静止基线由静止窗口内采样均值/方差建立，
@@ -7640,7 +7651,11 @@ function alEvAnalysis(ev){
   if(ev.wavPath)media.push('音频文件：'+ev.wavPath);
   L.push('【影像留证】');
   if(media.length)media.forEach(x=>L.push('  '+x));
-  else L.push('  无（未启用摄像头，或本次抓拍/录像未成功）');
+  else {
+    L.push('  无（未启用摄像头，或本次抓拍/录像未成功）');
+    const _ce=(ev.camErr||GUARD.camErr);
+    if(_ce)L.push('  诊断：'+_ce);
+  }
   L.push('（声级为相对满量程数字电平，未经声级计校准，不作合规判定）');
   return L.join('\n');
 }
@@ -8400,10 +8415,25 @@ function alGpsStop(){
     alPaintTop();
   });
 })();
+/* v1.3.0 需求③：把摄像头打开失败的根因翻译成用户在事件日志里能看懂的中文，
+   而不是被 catch 静默吞掉。Android WebView 视频流需原生 WebChromeClient 授权，
+   多数机型纯 JS 的 getUserMedia({video}) 会静默失败 —— 这里把原因显式暴露。 */
+function alCamErrReason(e){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)
+    return '当前 WebView 不支持 getUserMedia({video})（Android 多数机型需原生相机桥接，纯 JS 抓拍会静默失败）';
+  const n=(e&&e.name)||'';
+  if(/NotAllowed|PermissionDenied/.test(n))return '摄像头权限被拒绝（请在系统设置中为本 App 开启摄像头权限）';
+  if(/NotFound|DevicesNotFound/.test(n))return '未检测到摄像头设备';
+  if(/NotReadable|AlreadyStarted|TrackStart|AbortError/.test(n))return '摄像头被占用或打开失败（可能已被其它应用或本应用残留占用，请关闭其它相机应用后重试）';
+  if(/Overconstrained|ConstraintNotSatisfied/.test(n))return '摄像头参数不被支持（分辨率/朝向约束无法满足）';
+  if(/SecurityError/.test(n))return '安全上下文限制（需 https 或原生壳提供的安全源）';
+  return '摄像头打开失败：'+((e&&e.message)||n||'未知错误');
+}
 async function alCamTrigger(){
   if(!($('alertCam')&&$('alertCam').checked))return;
   if(GUARD.camBusy)return;GUARD.camBusy=true;
   const ev=GUARD.ev;
+  GUARD.camErr=''; if(ev)ev.camErr='';   // v1.3.0 需求③：每次触发先清空，记录本次诊断
   const wantShot=$('alertCamShot')&&$('alertCamShot').checked;
   const wantRec =$('alertCamRec')&&$('alertCamRec').checked;
   const sec=Math.max(3,parseFloat(($('alertCamSec')||{}).value)||15);
@@ -8418,14 +8448,15 @@ async function alCamTrigger(){
          一个**占位** videoinput（label/deviceId 均空），
          表现就是"只检测到 1 路摄像头"，而手机其实有前后摄。 */
       const st=await alCamEnsurePerm();
-      if(st==='denied'){diagAdd('warn','[抓拍] 摄像头权限被拒，无法抓拍');}
+      if(st==='denied'){GUARD.camErr='摄像头权限被拒绝（请在系统设置中为本 App 开启摄像头权限）';diagAdd('warn','[抓拍] 摄像头权限被拒，无法抓拍');}
+      else if(st==='nodevice'){GUARD.camErr='未检测到摄像头设备';diagAdd('warn','[抓拍] 未检测到摄像头设备');}
       const d=await alCamListDual();
       const mf=($('alertCamFront')||{}).value||'';
       const mb=($('alertCamBack')||{}).value||'';
       const frontId=mf||d.front, backId=mb||d.back;
       if(backId)routes.push({tag:'_back' ,label:'后置',id:backId ,facing:'environment'});
       if(frontId&&frontId!==backId)routes.push({tag:'_front',label:'前置',id:frontId,facing:'user'});
-      if(!routes.length)diagAdd('warn','[抓拍] 未找到摄像头，单路降级');
+      if(!routes.length){GUARD.camErr=GUARD.camErr||'未找到可用摄像头（前后摄枚举为空）';diagAdd('warn','[抓拍] 未找到摄像头，单路降级');}
     }
     if(!routes.length){
       routes=[{tag:'',label:'摄像头',id:manual,facing:'environment'}];
@@ -8512,7 +8543,8 @@ async function alCamTrigger(){
           }catch(e){diagAdd('warn',r.label+'录像失败：'+((e&&e.message)||e));}
         }
       }catch(e){
-        diagAdd('warn','[抓拍] '+r.label+'摄像头打开失败：'+((e&&e.message)||e));
+        GUARD.camErr=alCamErrReason(e); if(ev)ev.camErr=GUARD.camErr;
+        diagAdd('warn','[抓拍] '+r.label+'摄像头打开失败：'+alCamErrReason(e));
         alLog('⚠️ '+r.label+'摄像头打开失败，已跳过','w');
       }finally{
         /* ★ 必须释放，否则下一路永远打不开（这正是"前置没画面"的直接原因）★ */
@@ -8528,8 +8560,9 @@ async function alCamTrigger(){
         (routes.length===1?'单路':(done.back?'后置✓ ':'')+(done.front?'前置✓':(done.back?'':'✗'))) ,'g');
     }
   }catch(e){
+    GUARD.camErr=alCamErrReason(e); if(ev)ev.camErr=GUARD.camErr;
     alLog('❌ 抓拍异常：'+((e&&e.message)||e),'w');
-    if(typeof diagAdd==='function')diagAdd('warn','[抓拍] 异常 '+((e&&e.message)||e));
+    if(typeof diagAdd==='function')diagAdd('warn','[抓拍] 异常 '+alCamErrReason(e));
   }finally{
     try{GUARD.camStream=null;}catch(_){}
     GUARD.camBusy=false;
@@ -8825,13 +8858,20 @@ const FNPOP={
 let fnpopOpen=null;
 function fnpopHide(){
   if(!fnpopOpen)return;
-  const c=FNPOP[fnpopOpen];
+  const was=fnpopOpen;
+  const c=FNPOP[was];
   const pop=$(c.pop);if(pop)pop.classList.remove('on');
   const b=$(c.btn);if(b)b.classList.remove('on');
   /* 同步摘掉 body 标记：它负责把 .pmask 提到功能层之上（见 CSS 注释）。
      Esc 关闭时也走这里，故无需在 keydown 里另写一遍。 */
   document.body.classList.remove('fnpop-open');
   fnpopOpen=null;
+  /* v1.3.0 需求②：关闭噪音评估回到主界面时，主采集回到初始态（停止并复位），
+     噪音测量会话也一并复位，保证可重新点「开始采集」启动声波采集。 */
+  if(was==='nz'){
+    try{ if(running)stop(); }catch(_){}
+    try{ nzReset(); nzSesSet('idle'); nzAcqBtnSync(); }catch(_){}
+  }
 }
 function fnpopShow(k){
   if(fnpopOpen===k){fnpopHide();return;}      // 再点一次 = 收起
@@ -8841,6 +8881,12 @@ function fnpopShow(k){
   const b=$(c.btn);if(b)b.classList.add('on');
   document.body.classList.add('fnpop-open');
   fnpopOpen=k;
+  /* v1.3.0 需求①：进入噪音评估时若主采集在跑则先暂停，把控制权交给面板内的
+     「开始采集 / 暂停」一体键；并复位噪音测量会话到初始态，便于重新测量。 */
+  if(k==='nz'){
+    try{ if(running)stop(); }catch(_){}
+    try{ nzReset(); nzSesSet('idle'); nzAcqBtnSync(); }catch(_){}
+  }
   if(c.tip&&!running)toast(c.tip);
   /* display:none → flex 后尺寸要等布局完成才可用，故连等两帧再补绘：
      第一帧浏览器套用 display，第二帧 getBoundingClientRect 才返回真实宽高。 */
