@@ -37,7 +37,7 @@
 1. 本地 `bash tools/resign-ios.sh`（需 p12 证书 + mobileprovision 描述文件）
 2. GitHub Actions 签名版工作流 `iOS Build (Ad-Hoc 签名)`，配置 6 个 secrets 后一步出可装包
 
-详见 [`docs/iOS-macOS-构建指南.md`](docs/iOS-macOS-构建指南.md) 与 [`docs/IOS-BUILD.md`](docs/IOS-BUILD.md)。
+详见 [`docs/iOS-macOS-构建指南.md`](docs/iOS-macOS-构建指南.md)。
 
 ---
 
