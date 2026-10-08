@@ -1,9 +1,13 @@
-# AlphaSun Sonic Analyzer 声波分析仪（移动版 v0.04）
+# AlphaSun Sonic Analyzer 声波分析仪（移动版）
 
 > **本仓库是独立软件**，从 `AlphaSun-AudioSpectrumLab`（桌面版）派生，**与桌面版互不影响**。
 > 包名 `com.alphasun.sonicanalyzer`，与桌面版 `com.alphasun.audiolab` **并存安装、互不覆盖**。
 
-面向 **Android / iOS** 的移动端声波频谱分析与警戒值守工具。
+AlphaSun 声波分析仪 · Sonic 移动版本支持（ Android APK / iOS IPA），主要功能包含： 
+1、声波频谱的多维分析，包含诸多声波参数，其中彩虹环型频谱在无聊的时候也可以带来一定的治愈和情绪价值； 
+2、噪音评估，可以为环境按标准进行噪音评估，并提供分贝曲线和数据记录处理能力； 
+3、声波警戒，主要是站在手机安全的角度，根据声音的异常变化、手机位移等去告警记录； 
+4、声源定位和声音的前景/背景分离还在不断完善中。。
 
 ---
 
